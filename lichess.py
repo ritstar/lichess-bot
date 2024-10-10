@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import cairosvg
 import os
 from dotenv import load_dotenv
+import sys
 
 load_dotenv()
 
@@ -60,6 +61,29 @@ def analyze_position(fen, game_data):
         
         return best_move, explanation
 
+# Check if the game has ended and print the result
+def check_game_over(game_data):
+    status = game_data.get('status', '')
+    if status == 'mate':
+        winner = "You" if game_data.get('winner') == game_data['color'] else "Your opponent"
+        print("Game finished: Checkmate!")
+        print(f"{winner} won the game.")
+        return True
+    elif status == 'resign':
+        winner = "You" if game_data.get('winner') == game_data['color'] else "Your opponent"
+        print("Game finished: Resignation!")
+        print(f"{winner} won the game.")
+        return True
+    elif status == 'timeout':
+        winner = "You" if game_data.get('winner') == game_data['color'] else "Your opponent"
+        print("Game finished: Timeout!")
+        print(f"{winner} won the game.")
+        return True
+    elif status == 'draw':
+        print("Game finished: Draw!")
+        return True
+    return False
+
 # Display the chess board using the given FEN and optional move highlight, oriented properly based on player's color
 def display_chess_board(fen, move=None, flip=False):
     """
@@ -93,6 +117,10 @@ def main():
     while True:
         fen, game_id, game_data = fetch_current_game()
         if fen and game_id:
+            if check_game_over(game_data):  # Check if the game has ended
+                print("Exiting program...")
+                plt.close()  # Close the board display
+                sys.exit()   # Exit the Python program
             if fen != previous_fen:  # Update the board only if the FEN has changed
                 print(f"FEN: {fen}")
                 previous_fen = fen

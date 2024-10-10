@@ -8,9 +8,8 @@ This Python program allows you to play chess games on [Lichess](https://lichess.
 - **Stockfish Integration**: Analyzes the current game state and provides the best move
 - **Real-Time Board Updates**: Displays the chessboard and updates it after each move
 - **Automated Moves**: Plays moves automatically if it's a Rapid game, otherwise suggests moves for Blitz/Bullet
-- **Opponent Chat**: If the opponent is taking too long, the bot sends a polite chat message, "Play fast, please!"
 - **Board Orientation**: Automatically adjusts the board orientation based on your color (white or black)
-- **Checkmate Detection**: The program can detect if you've won, lost, or if the game has ended and exits gracefully
+- **Checkmate Detection (In progress)**: The program can detect if you've won, lost, or if the game has ended and exits gracefully
 
 ## Requirements
 
@@ -64,7 +63,6 @@ The bot will:
 - Analyze the position
 - Suggest or play moves (depending on game type)
 - Update the board in real-time
-- Send chat messages if the opponent is taking too long
 
 ## Known Issues
 
