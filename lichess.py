@@ -25,8 +25,7 @@ def fetch_current_game():
 
     if 'nowPlaying' in data and len(data['nowPlaying']) > 0:
         game = data['nowPlaying'][0]
-        if game['isMyTurn']:
-            return game['fen'], game['gameId'], game
+        return game['fen'], game['gameId'], game
     return None, None, None
 
 # Play a move on Lichess
@@ -49,7 +48,7 @@ def analyze_position(fen, game_data):
     
     # Set thinking time based on game type
     game_speed = game_data['speed']  # 'rapid' or 'blitz'
-    thinking_time = 0.3 if game_speed == 'blitz' or game_speed == 'bullet' else 2.0
+    thinking_time = 0.3 if game_speed == 'blitz' or game_speed == 'bullet' else 2
 
     # Use Stockfish to analyze the position
     with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
@@ -89,36 +88,39 @@ def display_chess_board(fen, move=None, flip=False):
 
 def main():
     plt.ion()  # Turn on interactive mode for real-time board updates
+    previous_fen = None  # Store the previous FEN to avoid redundant board updates
 
     while True:
         fen, game_id, game_data = fetch_current_game()
         if fen and game_id:
-            print(f"FEN: {fen}")
-            best_move, explanation = analyze_position(fen, game_data)
-            if best_move:
-                print(f"Suggested move: {best_move}")
-                print(f"Explanation: {explanation}")
+            if fen != previous_fen:  # Update the board only if the FEN has changed
+                print(f"FEN: {fen}")
+                previous_fen = fen
                 
                 # Determine whether to flip the board (if playing black)
                 flip_board = game_data['color'] == 'black'
                 
-                # Visualize the board and highlight the move in real-time
-                display_chess_board(fen, best_move, flip=flip_board)
-                
-                # Check if it's a Blitz game
-                if game_data['speed'] == 'blitz' or game_data['speed'] == 'bullet':
-                    print(f"{game_data['speed']} game detected. Please make the move manually.")
-                else:
-                    play_move_on_lichess(game_id, best_move)
-                    wait_count = 0  # Reset wait count after playing a move
-            else:
-                print("Could not analyze the position.")
-            
-        else:
-            print("Waiting for your turn...")
+                # Visualize the board in real-time (no best move needed when not your turn)
+                display_chess_board(fen, flip=flip_board)
 
-        # Wait for 0.2 seconds before checking again, but update the board continuously
-        time.sleep(0.2)
+                if game_data['isMyTurn']:
+                    best_move, explanation = analyze_position(fen, game_data)
+                    if best_move:
+                        print(f"Suggested move: {best_move}")
+                        print(f"Explanation: {explanation}")
+                        
+                        # Visualize the board and highlight the move
+                        display_chess_board(fen, best_move, flip=flip_board)
+
+                        if game_data['speed'] == 'blitz' or game_data['speed'] == 'bullet':
+                            print(f"{game_data['speed']} game detected. Please make the move manually.")
+                        else:
+                            play_move_on_lichess(game_id, best_move)
+            else:
+                print("Waiting for your turn...")
+        
+        # Update the board continuously regardless of the turn
+        plt.pause(0.5)
 
 if __name__ == "__main__":
     main()
