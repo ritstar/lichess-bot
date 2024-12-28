@@ -49,7 +49,7 @@ def analyze_position(fen, game_data):
     
     # Set thinking time based on game type
     game_speed = game_data['speed']  # 'rapid' or 'blitz'
-    thinking_time = 0.3 if game_speed == 'blitz' or game_speed == 'bullet' else 2
+    thinking_time = 0.2 if game_speed == 'blitz' or game_speed == 'bullet' else 0.3
 
     # Use Stockfish to analyze the position
     with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
@@ -84,7 +84,6 @@ def check_game_over(game_data):
         return True
     return False
 
-# Display the chess board using the given FEN and optional move highlight, oriented properly based on player's color
 def display_chess_board(fen, move=None, flip=False):
     """
     Displays the chess board and updates it in real-time.
@@ -101,11 +100,10 @@ def display_chess_board(fen, move=None, flip=False):
         board_svg = chess.svg.board(board, size=400, orientation=chess.BLACK if flip else chess.WHITE)
 
     # Convert the SVG to PNG and display using matplotlib
-    with open("chess_board.svg", "w") as f:
-        f.write(board_svg)
-    
-    cairosvg.svg2png(url="chess_board.svg", write_to="chess_board.png")
+    cairosvg.svg2png(bytestring=board_svg, write_to="chess_board.png")  # Directly use bytestring, avoid creating files
     img = plt.imread("chess_board.png")
+    
+    plt.clf()  # Clear the previous plot
     plt.imshow(img)
     plt.axis('off')  # Turn off axis
     plt.pause(0.001)  # Pause briefly for real-time updates
@@ -113,6 +111,7 @@ def display_chess_board(fen, move=None, flip=False):
 def main():
     plt.ion()  # Turn on interactive mode for real-time board updates
     previous_fen = None  # Store the previous FEN to avoid redundant board updates
+    move_count = 0  # Track the number of moves to detect slowdowns
 
     while True:
         fen, game_id, game_data = fetch_current_game()
@@ -121,13 +120,15 @@ def main():
                 print("Exiting program...")
                 plt.close()  # Close the board display
                 sys.exit()   # Exit the Python program
+
             if fen != previous_fen:  # Update the board only if the FEN has changed
                 print(f"FEN: {fen}")
                 previous_fen = fen
+                move_count += 1  # Increment move counter
                 
                 # Determine whether to flip the board (if playing black)
                 flip_board = game_data['color'] == 'black'
-                
+
                 # Visualize the board in real-time (no best move needed when not your turn)
                 display_chess_board(fen, flip=flip_board)
 
@@ -136,7 +137,7 @@ def main():
                     if best_move:
                         print(f"Suggested move: {best_move}")
                         print(f"Explanation: {explanation}")
-                        
+
                         # Visualize the board and highlight the move
                         display_chess_board(fen, best_move, flip=flip_board)
 
@@ -147,8 +148,12 @@ def main():
             else:
                 print("Waiting for your turn...")
         
+        # Check and mitigate performance slowdown
+        if move_count % 10 == 0:
+            plt.gcf().canvas.flush_events()  # Force a redraw to prevent lag
+        
         # Update the board continuously regardless of the turn
-        plt.pause(0.5)
+        plt.pause(0.01)
 
 if __name__ == "__main__":
     main()
